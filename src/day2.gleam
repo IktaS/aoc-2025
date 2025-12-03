@@ -17,9 +17,7 @@ pub fn is_invalid_id_p2(id: Int) -> Bool {
     list.range(1, length / 2)
     |> list.find(fn(i) {
       let part = string.drop_end(s, length - i)
-      let recreated =
-        list.range(1, length / i)
-        |> list.fold("", fn(str, _) { str <> part })
+      let recreated = string.repeat(part, length / i)
       s == recreated
     })
   {
