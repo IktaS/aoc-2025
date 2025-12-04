@@ -14,19 +14,17 @@ pub type Map(value) {
 }
 
 pub fn build_map_from_list(l: List(List(value))) -> Result(Map(value), Nil) {
-  let #(list_of_value, _) =
+  let list_of_value =
     l
-    |> list.fold(#([], 0), fn(acc, row) {
+    |> list.index_fold([], fn(list_final, row, y) {
       case list.is_empty(row) {
-        True -> acc
+        True -> list_final
         False -> {
-          let #(list_final, y) = acc
-          let #(folded_list, _) =
-            list.fold(row, #(list_final, 0), fn(acc2, val) {
-              let #(l2, x) = acc2
-              #(list.append(l2, [#(Coordinate(x, y), val)]), x + 1)
+          let folded_list =
+            list.index_fold(row, list_final, fn(acc2, val, x) {
+              list.append(acc2, [#(Coordinate(x, y), val)])
             })
-          #(folded_list, y + 1)
+          folded_list
         }
       }
     })
@@ -36,6 +34,31 @@ pub fn build_map_from_list(l: List(List(value))) -> Result(Map(value), Nil) {
     length_x: list.length(first_arr) - 1,
     length_y: list.length(l) - 1,
   ))
+}
+
+pub fn find_all_removable_coords(
+  map: Map(String),
+) -> Result(List(Coordinate), Nil) {
+  list.range(0, map.length_y)
+  |> list.try_fold([], fn(acc, y) {
+    use count <- result.try(
+      list.range(0, map.length_x)
+      |> list.try_fold([], fn(acc2, x) {
+        use current_value <- result.try(dict.get(map.map, Coordinate(x, y)))
+        case current_value == "@" {
+          False -> Ok(acc2)
+          True -> {
+            let rolls = count_rolls_surrounding_coord(map, Coordinate(x, y))
+            case rolls < 4 {
+              True -> Ok(list.append(acc2, [Coordinate(x, y)]))
+              False -> Ok(acc2)
+            }
+          }
+        }
+      }),
+    )
+    Ok(list.append(acc, count))
+  })
 }
 
 pub fn count_rolls_surrounding_coord(m: Map(String), coords: Coordinate) -> Int {
@@ -76,61 +99,11 @@ pub fn day4_p1() {
         False -> list.append(a, [line_arr])
       }
     })
-  echo arr
   use map <- result.try(build_map_from_list(arr))
-  list.range(0, map.length_y)
-  |> list.try_fold(0, fn(acc, y) {
-    use count <- result.try(
-      list.range(0, map.length_x)
-      |> list.try_fold(0, fn(acc2, x) {
-        use current_value <- result.try(dict.get(map.map, Coordinate(x, y)))
-        case current_value == "@" {
-          False -> Ok(acc2)
-          True -> {
-            let rolls = count_rolls_surrounding_coord(map, Coordinate(x, y))
-            echo "Position "
-              <> int.to_string(x)
-              <> ", "
-              <> int.to_string(y)
-              <> " has "
-              <> int.to_string(rolls)
-              <> " rolls"
-            case rolls < 4 {
-              True -> Ok(acc2 + 1)
-              False -> Ok(acc2)
-            }
-          }
-        }
-      }),
-    )
-    Ok(acc + count)
-  })
+  use removables <- result.try(find_all_removable_coords(map))
+  removables
+  |> list.length
   |> Ok
-}
-
-pub fn find_all_removable_coords(
-  map: Map(String),
-) -> Result(List(Coordinate), Nil) {
-  list.range(0, map.length_y)
-  |> list.try_fold([], fn(acc, y) {
-    use count <- result.try(
-      list.range(0, map.length_x)
-      |> list.try_fold([], fn(acc2, x) {
-        use current_value <- result.try(dict.get(map.map, Coordinate(x, y)))
-        case current_value == "@" {
-          False -> Ok(acc2)
-          True -> {
-            let rolls = count_rolls_surrounding_coord(map, Coordinate(x, y))
-            case rolls < 4 {
-              True -> Ok(list.append(acc2, [Coordinate(x, y)]))
-              False -> Ok(acc2)
-            }
-          }
-        }
-      }),
-    )
-    Ok(list.append(acc, count))
-  })
 }
 
 pub fn count_all_removable_rolls(sum: Int, map: Map(String)) -> Result(Int, Nil) {
