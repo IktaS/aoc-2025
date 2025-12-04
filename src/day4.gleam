@@ -1,5 +1,4 @@
 import gleam/dict
-import gleam/int
 import gleam/list
 import gleam/result
 import gleam/string
@@ -16,12 +15,12 @@ pub type Map(value) {
 pub fn build_map_from_list(l: List(List(value))) -> Result(Map(value), Nil) {
   let list_of_value =
     l
-    |> list.index_fold([], fn(list_final, row, y) {
+    |> list.index_fold([], fn(acc, row, y) {
       case list.is_empty(row) {
-        True -> list_final
+        True -> acc
         False -> {
           let folded_list =
-            list.index_fold(row, list_final, fn(acc2, val, x) {
+            list.index_fold(row, acc, fn(acc2, val, x) {
               list.append(acc2, [#(Coordinate(x, y), val)])
             })
           folded_list
