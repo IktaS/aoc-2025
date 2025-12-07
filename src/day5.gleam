@@ -112,7 +112,7 @@ pub fn day5_p1() {
 pub fn day5_p2() {
   let assert Ok(input) = file.read(from: "./input/day5.txt")
   let input_str = string.split(input, on: "\n\n")
-  let #(ranges, input) = case input_str {
+  let #(ranges, _) = case input_str {
     [a, b] -> #(a, b)
     _ -> panic as "Unexpected input"
   }
