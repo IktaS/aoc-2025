@@ -3,6 +3,7 @@ import gleam/int
 import gleam/list
 import gleam/option
 import gleam/order
+import gleam/regexp
 import gleam/result
 import gleam/string
 import simplifile as file
@@ -22,29 +23,15 @@ pub fn handle_upsert(value: Int, operator: String) {
 }
 
 fn parse_operators(operator_str: String) {
-  let splitted =
-    operator_str
-    |> string.split("")
-  let first = splitted |> list.first |> result.unwrap("")
-  let cleaned_splitted = splitted |> list.drop(1)
-  echo cleaned_splitted
-  let #(a, _) =
-    cleaned_splitted
-    |> list.fold(#([], first), fn(acc, char) {
-      let #(operators, current_operator) = acc
-      case char {
-        "*" -> #(list.append(operators, [current_operator]), char)
-        "+" -> #(list.append(operators, [current_operator]), char)
-        _ -> #(operators, current_operator <> char)
-      }
-    })
-  a
+  let assert Ok(re) = regexp.from_string("\\S\\s*")
+
+  regexp.scan(re, operator_str) |> list.map(fn(op) { op.content })
 }
 
 fn parse_operator(o: String) {
   let length = string.length(o)
 
-  Operator(string.first(o) |> result.unwrap(""), length)
+  Operator(string.first(o) |> result.unwrap(""), length - 1)
 }
 
 pub type Operator {
@@ -78,9 +65,7 @@ pub fn day6_p1() {
   use operator_str <- result.try(list.last(cleaned_input))
   let operator_dict =
     parse_operators(operator_str)
-    |> echo
     |> list.index_map(fn(operator, index) { #(index, parse_operator(operator)) })
-    |> echo
     |> dict.from_list
   let cleaned_input =
     list.reverse(cleaned_input) |> list.drop(1) |> list.reverse
@@ -116,38 +101,55 @@ pub fn day6_p2() {
   // drop last empty string
   let cleaned_input = list.reverse(input_str) |> list.drop(1) |> list.reverse
   use operator_str <- result.try(list.last(cleaned_input))
-  let #(operator_list, _) =
-    operator_str
-    |> string.split(" ")
-    |> list.fold(#([], 0), fn(acc, operator) {
-      let #(final_list, idx) = acc
-      case string.is_empty(operator) {
-        True -> acc
-        False -> #(
-          list.append(final_list, [#(idx, operator |> string.trim)]),
-          idx + 1,
-        )
-      }
-    })
-  let operator_dict = dict.from_list(operator_list)
+  let operator_dict =
+    parse_operators(operator_str)
+    |> list.index_map(fn(operator, index) { #(index, parse_operator(operator)) })
+    |> dict.from_list
+  let operator_dict_length = dict.keys(operator_dict) |> list.length
   let cleaned_input =
-    list.reverse(cleaned_input)
-    |> list.drop(1)
-    |> list.reverse
-    |> list.fold([], fn(acc, operands) {
-      let l2 =
-        operands
-        |> string.split(" ")
-      list.append(acc, [l2])
+    list.reverse(cleaned_input) |> list.drop(1) |> list.reverse
+  cleaned_input
+  |> list.map(fn(operands) {
+    let operand_l = string.split(operands, "")
+    list.range(0, operator_dict_length - 1)
+    |> list.fold(#(operand_l, []), fn(acc, index) {
+      let #(current_list, end_list) = acc
+      let value =
+        dict.get(operator_dict, index) |> result.unwrap(Operator("noop", 0))
+      let taken_list = list.take(current_list, value.length)
+      let new_list = list.drop(current_list, value.length + 1)
+      #(new_list, list.append(end_list, [taken_list]))
     })
-    |> list.transpose
-    |> list.index_map(fn(operands, index) {
-      echo operands
-      let operator = dict.get(operator_dict, index) |> result.unwrap("noop")
-      // Operations(operands, operator)
+  })
+  |> list.map(fn(list) {
+    let #(_, a) = list
+    a
+  })
+  |> list.fold(dict.new(), fn(acc, operands) {
+    operands
+    |> list.index_fold(acc, fn(acc, operand, index) {
+      dict.upsert(acc, index, fn(x) {
+        case x {
+          option.None -> [operand]
+          option.Some(v) -> list.append(v, [operand])
+        }
+      })
     })
-    // |> list.fold(0, fn(acc, operation) {
-    //   acc + fold_operation_transpose(operation)
-    // })
-    |> Ok
+  })
+  |> dict.fold([], fn(acc, key, value) {
+    let operator =
+      dict.get(operator_dict, key) |> result.unwrap(Operator("noop", 0))
+    let transposed_mapped_value =
+      value
+      |> list.transpose
+      |> list.map(fn(x) {
+        string.join(x, "")
+        |> string.trim
+        |> int.parse
+        |> result.unwrap(0)
+      })
+    list.append(acc, [Operations(transposed_mapped_value, operator)])
+  })
+  |> list.fold(0, fn(acc, operation) { acc + fold_operations(operation) })
+  |> Ok
 }

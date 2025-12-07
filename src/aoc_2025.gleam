@@ -16,6 +16,6 @@ pub fn main() {
   // let _ = echo day4.day4_p2()
   // let _ = echo day5.day5_p1()
   // let _ = echo day5.day5_p2()
-  let _ = echo day6.day6_p1()
-  // let _ = echo day6.day6_p2()
+  // let _ = echo day6.day6_p1()
+  let _ = echo day6.day6_p2()
 }
