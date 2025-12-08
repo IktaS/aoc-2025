@@ -5,6 +5,7 @@ import day4
 import day5
 import day6
 import day7
+import day8
 
 pub fn main() {
   // let _ = echo day1.day1()
@@ -20,5 +21,7 @@ pub fn main() {
   // let _ = echo day6.day6_p1()
   // let _ = echo day6.day6_p2()
   // let _ = echo day7.day7_p1()
-  let _ = echo day7.day7_p2()
+  // let _ = echo day7.day7_p2()
+  // let _ = echo day8.day8_p1()
+  let _ = echo day8.day8_p2()
 }
